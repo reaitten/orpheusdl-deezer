@@ -11,10 +11,11 @@ module_information = ModuleInformation(
     service_name = 'Deezer',
     module_supported_modes = ModuleModes.download | ModuleModes.lyrics | ModuleModes.covers | ModuleModes.credits,
     global_settings = {'client_id': '447462', 'client_secret': 'a83bf7f38ad2f137e444727cfc3775cf', 'bf_secret': '', 'track_url_key': '', 'prefer_mhm1': False},
-    session_settings = {'email': '', 'password': ''},
+    session_settings = {'email': '', 'password': '', 'arl': ''},
     session_storage_variables = ['arl'],
     netlocation_constant = 'deezer',
     url_decoding = ManualEnum.manual,
+    login_behaviour = ManualEnum.manual,
     test_url = 'https://www.deezer.com/track/3135556',
 )
 
@@ -37,12 +38,6 @@ class ModuleInterface:
             self.default_cover.file_type = ImageFileTypeEnum.jpg
 
         self.session = DeezerAPI(self.exception, self.settings['client_id'], self.settings['client_secret'], self.settings['bf_secret'], self.settings['track_url_key'])
-        arl = module_controller.temporary_settings_controller.read('arl')
-        if arl:
-            try:
-                self.session.login_via_arl(arl)
-            except self.exception:
-                self.login(self.settings['email'], self.settings['password'])
 
         self.quality_parse = {
             QualityEnum.MINIMUM: 'MP3_128',
@@ -57,11 +52,18 @@ class ModuleInterface:
             CoverCompressionEnum.high: 80,
             CoverCompressionEnum.low: 50
         }
-        if arl:
-            self.check_sub()
 
-    def login(self, email: str, password: str):
-        arl, _ = self.session.login_via_email(email, password)
+        arl = module_controller.temporary_settings_controller.read('arl')
+        self.login(self.settings['email'], self.settings['password'], arl or self.settings['arl'])
+
+    def login(self, email: str, password: str, arl: str):
+        if email and password:
+            arl, _ = self.session.login_via_email(email, password)
+        elif arl:
+            self.session.login_via_arl(arl)
+        else:
+            return
+
         self.tsc.set('arl', arl)
         self.check_sub()
 
