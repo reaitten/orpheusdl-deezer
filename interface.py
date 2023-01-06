@@ -54,7 +54,7 @@ class ModuleInterface:
         }
 
         arl = module_controller.temporary_settings_controller.read('arl')
-        self.login(self.settings['email'], self.settings['password'], arl or self.settings['arl'])
+        self.login(self.settings['email'], self.settings['password'], self.settings['arl'] or arl)
 
     def login(self, email: str, password: str, arl: str):
         if email and password:
